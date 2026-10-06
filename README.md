@@ -1,19 +1,33 @@
-# No longer maintained!
 # PlateUp-MorePlayersMod
-Mod that adds more players to PlateUp.
+Mod that raises PlateUp's 4-player limit. BepInEx 5 plugin.
 
-Instructions:
-1. Navigate to your plateup-folder (Where your plateup.exe is).
-2. Extract the files from BepInEx.zip into the plateup-folder.
-3. Start the game and wait for the main menu to load.
-4. Close the game.
-5. Extract the dll file from PlateUpMorePlayers.zip into plateup-folder/BepInEx/plugins.
-6. Start the game and wait for the main menu to load.
-7. Close the game.
-8. Go to plateup-folder/BepInEx/config and open MorePlayers.cfg with a text editor (eg. notepad).
-9. Change the Max players to whatever you wish between 4 and theoretically 128 (Due to it being the max steam lobbies supports, however i have not tested it for that many players).
-10. Change the Player confirmation count to any value between 0 and 1 (eg 0.5 for 50% of players). This changes how many players need to ready up for things.
-11. Save the file.
-12. Start the game up and invite some friends! They also require the mod however!
+Updated for the current PlateUp build (Unity 2020.3.48, game with the built-in Workshop mod loader).
 
-Extra note: Everyone has to join the lobby before anyone presses the buttons to create a character. Otherwise you will only be allowed four players. This is due to a small bug i haven't figured out yet.
+## Install (every player)
+1. Download BepInEx 5 (x64, `BepInEx_win_x64_5.4.x.zip`) from https://github.com/BepInEx/BepInEx/releases.
+2. Extract it into the folder that contains `PlateUp.exe`.
+3. Start the game once and close it at the main menu (this creates `BepInEx/plugins` and `BepInEx/config`).
+4. Put `MorePlayers.dll` into `BepInEx/plugins`.
+5. Optional: edit `BepInEx/config/MorePlayers.cfg` and set `Max players` (4–16, default 8).
+
+**Everyone should install the mod.** The host's copy is what raises the lobby and player cap; matching versions avoid surprises.
+
+The lobby size is fixed when the lobby is created, so after changing the config the host should restart the game.
+
+## What it patches
+| Cap | Where | Patch |
+| --- | --- | --- |
+| Steam lobby size 4 | `SteamNetworkService.CreateNewLobby` → `SteamMatchmaking.CreateLobbyAsync(4)` | Prefix rewrites `maxMembers` |
+| Photon (crossplay) room size 4 | `PhotonNetworkService.CreateNewLobby` → `RoomOptions.MaxPlayers = 4` | Prefix on `LoadBalancingClient.OpCreateRoom` |
+| Player slot index < 4 | `PlayerManager.MaxPlayers` (readonly field) | Postfix on `Initialise` sets the field |
+| Join prompt hidden at 4 (cosmetic) | `PlayerInfoManager.EnsureCorrectModules` / `ArrangeModules` | Transpiler replaces the literal 4 |
+
+## Known limitations
+- The HQ only has 4 bedrooms. Players 5+ spawn at the default HQ spawn point and have no bed/outfit station of their own.
+- The old "Player confirmation count" setting was removed; ready-ups need everyone, as in the base game.
+
+## Building
+```
+dotnet build MorePlayers/MorePlayers.csproj -c Release -p:GameDir="<path to folder containing PlateUp.exe>"
+```
+If BepInEx is installed in `GameDir`, the DLL is copied into `BepInEx/plugins` automatically.
