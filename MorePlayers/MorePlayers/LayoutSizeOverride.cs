@@ -5,7 +5,7 @@ using HarmonyLib;
 using Kitchen;
 using Kitchen.Layouts;
 using Kitchen.Layouts.Features;
-using KitchenData;
+using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
 
@@ -39,14 +39,21 @@ namespace MorePlayers
             {
                 return;
             }
+            TargetPlayers = LayoutPlayers(em);
+            Attempt = 0;
+            Constructing = TargetPlayers > VanillaMaxPlayers;
+        }
+
+        // How many players new maps should be sized for: players in the lobby (or the configured minimum), capped at the max.
+        internal static int LayoutPlayers(EntityManager em)
+        {
             int live_players;
-            using (EntityQuery query = em.CreateEntityQuery(typeof(CPlayer)))
+            using (EntityQuery query = em.CreateEntityQuery(ComponentType.ReadOnly<CPlayer>(), ComponentType.Exclude<CJoiningPlayer>()))
             {
                 live_players = query.CalculateEntityCount();
             }
-            TargetPlayers = Math.Max(live_players, Config.ConfigHelper.getLayoutSizePlayers());
-            Attempt = 0;
-            Constructing = TargetPlayers > VanillaMaxPlayers;
+            int players = Math.Max(live_players, Config.ConfigHelper.getLayoutSizePlayers());
+            return Math.Min(players, Config.ConfigHelper.getMaxPlayers());
         }
 
         [HarmonyFinalizer]
@@ -150,6 +157,87 @@ namespace MorePlayers
         private static LayoutPosition Add(LayoutPosition p, LayoutPosition offset)
         {
             return new LayoutPosition(p.x + offset.x, p.y + offset.y);
+        }
+    }
+
+    // The HQ generates its restaurant maps as soon as it loads, before friends have joined. When the lobby
+    // grows past what the current maps were sized for, re-raise the game's own "regenerate maps" request
+    // (the same thing changing the restaurant setting does). Waits until the player count has been stable
+    // for a few seconds and no one is carrying a map.
+    [HarmonyPatch(typeof(HandleLayoutRequests), "OnUpdate")]
+    public class HandleLayoutRequestsOverridePatch
+    {
+        private const float StableSeconds = 3f;
+
+        private static int GeneratedFor = -1;
+        private static int PendingPlayers = -1;
+        private static float PendingSince;
+
+        [HarmonyPrefix]
+        public static void Prefix(HandleLayoutRequests __instance)
+        {
+            if (!Config.ConfigHelper.getBiggerLayouts())
+            {
+                return;
+            }
+            Traverse traverse = Traverse.Create(__instance);
+            EntityQuery requests = traverse.Field("Requests").GetValue<EntityQuery>();
+            if (requests.CalculateEntityCount() != 1)
+            {
+                return;
+            }
+            EntityManager em = __instance.EntityManager;
+            int players = ConstructLayoutOverridePatch.LayoutPlayers(em);
+            HandleLayoutRequests.SLayoutRequest request = requests.GetSingleton<HandleLayoutRequests.SLayoutRequest>();
+
+            if (!request.HasBeenCreated)
+            {
+                // The game is about to (re)generate the maps this frame, sized for the current lobby.
+                GeneratedFor = players;
+                PendingPlayers = -1;
+                return;
+            }
+            if (players <= GeneratedFor || players <= 4)
+            {
+                PendingPlayers = -1;
+                return;
+            }
+            if (players != PendingPlayers)
+            {
+                PendingPlayers = players;
+                PendingSince = Time.realtimeSinceStartup;
+                return;
+            }
+            if (Time.realtimeSinceStartup - PendingSince < StableSeconds || AnyMapOutOfSlot(em, traverse))
+            {
+                return;
+            }
+
+            MorePlayers.Log.LogInfo($"Lobby has {players} players (maps were sized for {GeneratedFor}), regenerating restaurant maps");
+            request.HasBeenCreated = false;
+            requests.SetSingleton(request);
+        }
+
+        // True if any generated map has been picked up or moved off its pedestal.
+        private static bool AnyMapOutOfSlot(EntityManager em, Traverse traverse)
+        {
+            EntityQuery map_items = traverse.Field("MapItems").GetValue<EntityQuery>();
+            using (NativeArray<Entity> maps = map_items.ToEntityArray(Allocator.Temp))
+            {
+                foreach (Entity map in maps)
+                {
+                    if (!em.HasComponent<CHeldBy>(map))
+                    {
+                        return true;
+                    }
+                    Entity holder = em.GetComponentData<CHeldBy>(map).Holder;
+                    if (!em.Exists(holder) || !em.HasComponent<CreateLayoutSlots.CLayoutSlot>(holder))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
     }
 

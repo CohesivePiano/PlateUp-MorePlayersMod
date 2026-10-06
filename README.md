@@ -40,7 +40,9 @@ Customers scale in proportion to player count; patience and fire continue the ga
 ## Bigger restaurants
 With `[Layout] Bigger restaurants = true` (default), newly generated restaurant maps grow when more than 4 players are in the lobby. The kitchen + dining area is stretched so its area grows in proportion to player count (each side × √(players ÷ 4), at most +6 tiles per side), by duplicating rows/columns that run through the kitchen or dining room. Walls, doors and hatches stay consistent; the game's usual layout checks and decoration run on the bigger map.
 
-- Maps are sized when they are generated in the HQ, so have everyone join before generating a new restaurant — or set `Size for at least N players` (e.g. 8) to always generate big maps.
+- The HQ generates its maps as soon as it loads, before friends join. When the lobby grows past what the maps were sized for, the mod regenerates them (the same refresh the game does when you change the restaurant setting) once the player count has been stable for 3 seconds and nobody is carrying a map. Maps never shrink when players leave.
+- To always get big maps regardless of who is in the lobby, set `Size for at least N players` (e.g. 8).
+- Daily/weekly seeded-run maps are not regenerated.
 - Existing restaurants and saves keep their size.
 - If a stretched layout repeatedly fails the game's checks, the mod falls back to a normal-size map rather than leaving you with no map.
 

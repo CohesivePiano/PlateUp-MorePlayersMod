@@ -1,4 +1,4 @@
-using BepInEx;
+﻿using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using MorePlayers.Config;
@@ -11,7 +11,7 @@ public class MorePlayers : BaseUnityPlugin
 {
     private const string Guid = "MorePlayers";
     private const string Name = "MorePlayers";
-    private const string Version = "2.2.0";
+    private const string Version = "2.2.1";
 
     internal static ManualLogSource Log;
 
