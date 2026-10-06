@@ -23,7 +23,7 @@ The lobby size is fixed when the lobby is created, so after changing the config 
 | Join prompt hidden at 4 (cosmetic) | `PlayerInfoManager.EnsureCorrectModules` / `ArrangeModules` | Transpiler replaces the literal 4 |
 
 ## Known limitations
-- The HQ only has 4 bedrooms. Players 5+ spawn at the default HQ spawn point and have no bed/outfit station of their own.
+- The HQ only has 4 bedrooms. Players 5+ have no spawn marker, so they appear at the HQ's world origin, and have no bed/outfit station of their own.
 - The old "Player confirmation count" setting was removed; ready-ups need everyone, as in the base game.
 
 ## Building
