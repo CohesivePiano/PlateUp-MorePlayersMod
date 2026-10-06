@@ -10,6 +10,7 @@ public static class ConfigHelper
     private static ConfigEntry<bool> _scaleDifficulty;
     private static ConfigEntry<bool> _biggerLayouts;
     private static ConfigEntry<int> _layoutSizePlayers;
+    private static ConfigEntry<bool> _sharedBedrooms;
 
     public static void SetUp(ConfigFile config)
     {
@@ -25,6 +26,8 @@ public static class ConfigHelper
             new ConfigDescription(
                 "Size new maps for at least this many players even if fewer are in the lobby when the map is generated. 0 = use the number of players currently in the lobby.",
                 new AcceptableValueRange<int>(0, 8)));
+        _sharedBedrooms = config.Bind("HQ", "Shared bedrooms", true,
+            "Players 5-8 share bedrooms 1-4, each with their own bed, outfit station and name/profile indicator.");
     }
 
     public static int getMaxPlayers()
@@ -40,6 +43,11 @@ public static class ConfigHelper
     public static bool getBiggerLayouts()
     {
         return _biggerLayouts?.Value ?? false;
+    }
+
+    public static bool getSharedBedrooms()
+    {
+        return _sharedBedrooms?.Value ?? false;
     }
 
     public static int getLayoutSizePlayers()

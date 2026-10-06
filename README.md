@@ -22,6 +22,7 @@ The lobby size is fixed when the lobby is created, so after changing the config 
 | Player slot index < 4 | `PlayerManager.MaxPlayers` (readonly field) | Postfix on `Initialise` sets the field |
 | Join prompt hidden at 4 (cosmetic) | `PlayerInfoManager.EnsureCorrectModules` / `ArrangeModules` | Transpiler replaces the literal 4 |
 | Difficulty stops scaling at 4 | `DifficultyHelpers` customer rate / patience / fire spread | Postfixes extend the curves past 4 |
+| Only 4 bedrooms; furniture is owner-only | `CreateBedrooms.OnUpdate` | Postfix adds a second furniture set + spawn for players 5–8 in bedrooms 1–4 |
 | Restaurant size fixed | `CreateLayoutHelper.ConstructLayout` → `LayoutGraph.Build` | Postfix stretches the generated blueprint before decoration |
 
 ## Difficulty scaling past 4 players
@@ -46,8 +47,12 @@ With `[Layout] Bigger restaurants = true` (default), newly generated restaurant 
 - Existing restaurants and saves keep their size.
 - If a stretched layout repeatedly fails the game's checks, the mod falls back to a normal-size map rather than leaving you with no map.
 
+## Shared bedrooms
+The HQ has 4 bedrooms, and each room's furniture only works for the player it belongs to, so without this players 5–8 couldn't change their outfit or colour. With `[HQ] Shared bedrooms = true` (default), player 5 shares bedroom 1, player 6 bedroom 2, and so on. Each gets their own bed, outfit station, name/profile indicator and spawn point in that room.
+
+Free tiles are found from the HQ's floor plan when it loads. A placement is only used if everything in the room (old and new) can still be reached and the room stays walkable. If a room is too cramped, the bed is dropped first, and as a last resort the player just gets a spawn point there. The log shows what was placed for each player.
+
 ## Known limitations
-- The HQ only has 4 bedrooms. Players 5+ have no spawn marker, so they appear at the HQ's world origin, and have no bed/outfit station of their own.
 - The old "Player confirmation count" setting was removed; ready-ups need everyone, as in the base game.
 
 ## Building

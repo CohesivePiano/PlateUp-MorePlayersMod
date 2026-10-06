@@ -11,7 +11,7 @@ public class MorePlayers : BaseUnityPlugin
 {
     private const string Guid = "MorePlayers";
     private const string Name = "MorePlayers";
-    private const string Version = "2.2.1";
+    private const string Version = "2.3.0";
 
     internal static ManualLogSource Log;
 
