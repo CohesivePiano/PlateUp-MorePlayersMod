@@ -23,6 +23,11 @@
 
   <ItemGroup>
     <Reference Include="$(ManagedDir)\Kitchen.Common.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\Kitchen.FranchiseMode.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\Kitchen.Layouts.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\Kitchen.GameData.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\XNode.dll" Private="false" />
+    <Reference Include="$(ManagedDir)\MessagePack.dll" Private="false" />
     <Reference Include="$(ManagedDir)\Facepunch.Steamworks.Win64.dll" Private="false" />
     <Reference Include="$(ManagedDir)\PhotonRealtime.dll" Private="false" />
     <Reference Include="$(ManagedDir)\Photon3Unity3D.dll" Private="false" />

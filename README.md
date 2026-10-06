@@ -22,6 +22,7 @@ The lobby size is fixed when the lobby is created, so after changing the config 
 | Player slot index < 4 | `PlayerManager.MaxPlayers` (readonly field) | Postfix on `Initialise` sets the field |
 | Join prompt hidden at 4 (cosmetic) | `PlayerInfoManager.EnsureCorrectModules` / `ArrangeModules` | Transpiler replaces the literal 4 |
 | Difficulty stops scaling at 4 | `DifficultyHelpers` customer rate / patience / fire spread | Postfixes extend the curves past 4 |
+| Restaurant size fixed | `CreateLayoutHelper.ConstructLayout` → `LayoutGraph.Build` | Postfix stretches the generated blueprint before decoration |
 
 ## Difficulty scaling past 4 players
 The base game stops scaling difficulty at 4 players. With `Scale past 4 players = true` (default) the mod continues it:
@@ -35,6 +36,13 @@ The base game stops scaling difficulty at 4 players. With `Scale past 4 players 
 | 8 | 3.0x | 1.35x | 2.7x |
 
 Customers scale in proportion to player count; patience and fire continue the game's own 3→4 player step. The money reward multiplier is unchanged. 1–4 players play exactly like vanilla.
+
+## Bigger restaurants
+With `[Layout] Bigger restaurants = true` (default), newly generated restaurant maps grow when more than 4 players are in the lobby. The kitchen + dining area is stretched so its area grows in proportion to player count (each side × √(players ÷ 4), at most +6 tiles per side), by duplicating rows/columns that run through the kitchen or dining room. Walls, doors and hatches stay consistent; the game's usual layout checks and decoration run on the bigger map.
+
+- Maps are sized when they are generated in the HQ, so have everyone join before generating a new restaurant — or set `Size for at least N players` (e.g. 8) to always generate big maps.
+- Existing restaurants and saves keep their size.
+- If a stretched layout repeatedly fails the game's checks, the mod falls back to a normal-size map rather than leaving you with no map.
 
 ## Known limitations
 - The HQ only has 4 bedrooms. Players 5+ have no spawn marker, so they appear at the HQ's world origin, and have no bed/outfit station of their own.
