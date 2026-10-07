@@ -1,31 +1,57 @@
-using System.Diagnostics;
-using System.Linq;
 using BepInEx.Configuration;
-using Kitchen;
-using KitchenData;
-using Unity.Entities;
-using UnityEngine;
 
 namespace MorePlayers.Config;
 
 public static class ConfigHelper
 {
+    private const int VanillaMaxPlayers = 4;
+
     private static ConfigEntry<int> _maxPlayers;
-    private static ConfigEntry<float> _neededPlayerConfirmation;
+    private static ConfigEntry<bool> _scaleDifficulty;
+    private static ConfigEntry<bool> _biggerLayouts;
+    private static ConfigEntry<int> _layoutSizePlayers;
+    private static ConfigEntry<bool> _sharedBedrooms;
 
     public static void SetUp(ConfigFile config)
     {
-        _maxPlayers = config.Bind("Players", "Max players", 4, "How many players should be able to join your lobbies.");
-        _neededPlayerConfirmation = config.Bind("Players", "Player confirmation count", 1.0f, "How many players that need to confirm a vote to move on.");
+        _maxPlayers = config.Bind("Players", "Max players", 8,
+            new ConfigDescription(
+                "How many players can join lobbies you host. Restart the game (or re-host) after changing this.",
+                new AcceptableValueRange<int>(VanillaMaxPlayers, 8)));
+        _scaleDifficulty = config.Bind("Difficulty", "Scale past 4 players", true,
+            "Keep increasing customers, patience drain and fire spread for each player beyond 4 (the base game stops scaling at 4).");
+        _biggerLayouts = config.Bind("Layout", "Bigger restaurants", true,
+            "Make newly generated restaurant maps bigger when there are more than 4 players (area grows in proportion to player count). Existing restaurants keep their size.");
+        _layoutSizePlayers = config.Bind("Layout", "Size for at least N players", 0,
+            new ConfigDescription(
+                "Size new maps for at least this many players even if fewer are in the lobby when the map is generated. 0 = use the number of players currently in the lobby.",
+                new AcceptableValueRange<int>(0, 8)));
+        _sharedBedrooms = config.Bind("HQ", "Shared bedrooms", true,
+            "Players 5-8 share bedrooms 1-4, each with their own bed, outfit station and name/profile indicator.");
     }
 
     public static int getMaxPlayers()
     {
-        return _maxPlayers.Value;
+        return _maxPlayers?.Value ?? VanillaMaxPlayers;
     }
 
-    public static float getNeededPlayerConfirmation()
+    public static bool getScaleDifficulty()
     {
-        return _neededPlayerConfirmation.Value;
+        return _scaleDifficulty?.Value ?? false;
+    }
+
+    public static bool getBiggerLayouts()
+    {
+        return _biggerLayouts?.Value ?? false;
+    }
+
+    public static bool getSharedBedrooms()
+    {
+        return _sharedBedrooms?.Value ?? false;
+    }
+
+    public static int getLayoutSizePlayers()
+    {
+        return _layoutSizePlayers?.Value ?? 0;
     }
 }

@@ -1,21 +1,62 @@
 # PlateUp-MorePlayersMod
+Mod that raises PlateUp's 4-player limit. BepInEx 5 plugin.
 
-UPDATED FOR PERSONAL USE, MIGHT BE BUGS IDK.
+Updated for the current PlateUp build (Unity 2020.3.48, game with the built-in Workshop mod loader).
 
-Mod that adds more players to PlateUp.
+## Install (every player)
+1. Download BepInEx 5 (x64, `BepInEx_win_x64_5.4.x.zip`) from https://github.com/BepInEx/BepInEx/releases.
+2. Extract it into the folder that contains `PlateUp.exe`.
+3. Start the game once and close it at the main menu (this creates `BepInEx/plugins` and `BepInEx/config`).
+4. Put `MorePlayers.dll` into `BepInEx/plugins`.
+5. Optional: edit `BepInEx/config/MorePlayers.cfg` and set `Max players` (4–8, default 8).
 
-Instructions:
-1. Navigate to your plateup-folder (Where your plateup.exe is).
-2. Extract the files from BepInEx.zip into the plateup-folder.
-3. Start the game and wait for the main menu to load.
-4. Close the game.
-5. Extract the dll file from PlateUpMorePlayers.zip into plateup-folder/BepInEx/plugins.
-6. Start the game and wait for the main menu to load.
-7. Close the game.
-8. Go to plateup-folder/BepInEx/config and open MorePlayers.cfg with a text editor (eg. notepad).
-9. Change the Max players to whatever you wish between 4 and theoretically 128 (Due to it being the max steam lobbies supports, however i have not tested it for that many players).
-10. Change the Player confirmation count to any value between 0 and 1 (eg 0.5 for 50% of players). This changes how many players need to ready up for things.
-11. Save the file.
-12. Start the game up and invite some friends! They also require the mod however!
+**Everyone should install the mod.** The host's copy is what raises the lobby and player cap; matching versions avoid surprises.
 
-Extra note: Everyone has to join the lobby before anyone presses the buttons to create a character. Otherwise you will only be allowed four players. This is due to a small bug i haven't figured out yet.
+The lobby size is fixed when the lobby is created, so after changing the config the host should restart the game.
+
+## What it patches
+| Cap | Where | Patch |
+| --- | --- | --- |
+| Steam lobby size 4 | `SteamNetworkService.CreateNewLobby` → `SteamMatchmaking.CreateLobbyAsync(4)` | Prefix rewrites `maxMembers` |
+| Photon (crossplay) room size 4 | `PhotonNetworkService.CreateNewLobby` → `RoomOptions.MaxPlayers = 4` | Prefix on `LoadBalancingClient.OpCreateRoom` |
+| Player slot index < 4 | `PlayerManager.MaxPlayers` (readonly field) | Postfix on `Initialise` sets the field |
+| Join prompt hidden at 4 (cosmetic) | `PlayerInfoManager.EnsureCorrectModules` / `ArrangeModules` | Transpiler replaces the literal 4 |
+| Difficulty stops scaling at 4 | `DifficultyHelpers` customer rate / patience / fire spread | Postfixes extend the curves past 4 |
+| Only 4 bedrooms; furniture is owner-only | `CreateBedrooms.OnUpdate` | Postfix adds a second furniture set + spawn for players 5–8 in bedrooms 1–4 |
+| Restaurant size fixed | `CreateLayoutHelper.ConstructLayout` → `LayoutGraph.Build` | Postfix stretches the generated blueprint before decoration |
+
+## Difficulty scaling past 4 players
+The base game stops scaling difficulty at 4 players. With `Scale past 4 players = true` (default) the mod continues it:
+
+| Players | Customers | Patience drain | Fire spread |
+| --- | --- | --- | --- |
+| 4 (vanilla) | 1.5x | 1.15x | 1.5x |
+| 5 | 1.875x | 1.20x | 1.8x |
+| 6 | 2.25x | 1.25x | 2.1x |
+| 7 | 2.625x | 1.30x | 2.4x |
+| 8 | 3.0x | 1.35x | 2.7x |
+
+Customers scale in proportion to player count; patience and fire continue the game's own 3→4 player step. The money reward multiplier is unchanged. 1–4 players play exactly like vanilla.
+
+## Bigger restaurants
+With `[Layout] Bigger restaurants = true` (default), newly generated restaurant maps grow when more than 4 players are in the lobby. The kitchen + dining area is stretched so its area grows in proportion to player count (each side × √(players ÷ 4), at most +6 tiles per side), by duplicating rows/columns that run through the kitchen or dining room. Walls, doors and hatches stay consistent; the game's usual layout checks and decoration run on the bigger map.
+
+- The HQ generates its maps as soon as it loads, before friends join. When the lobby grows past what the maps were sized for, the mod regenerates them (the same refresh the game does when you change the restaurant setting) once the player count has been stable for 3 seconds and nobody is carrying a map. Maps never shrink when players leave.
+- To always get big maps regardless of who is in the lobby, set `Size for at least N players` (e.g. 8).
+- Daily/weekly seeded-run maps are not regenerated.
+- Existing restaurants and saves keep their size.
+- If a stretched layout repeatedly fails the game's checks, the mod falls back to a normal-size map rather than leaving you with no map.
+
+## Shared bedrooms
+The HQ has 4 bedrooms, and each room's furniture only works for the player it belongs to, so without this players 5–8 couldn't change their outfit or colour. With `[HQ] Shared bedrooms = true` (default), player 5 shares bedroom 1, player 6 bedroom 2, and so on. Each gets their own bed, outfit station, name/profile indicator and spawn point in that room.
+
+Free tiles are found from the HQ's floor plan when it loads. A placement is only used if everything in the room (old and new) can still be reached and the room stays walkable. If a room is too cramped, the bed is dropped first, and as a last resort the player just gets a spawn point there. The log shows what was placed for each player.
+
+## Known limitations
+- The old "Player confirmation count" setting was removed; ready-ups need everyone, as in the base game.
+
+## Building
+```
+dotnet build MorePlayers/MorePlayers.csproj -c Release -p:GameDir="<path to folder containing PlateUp.exe>"
+```
+If BepInEx is installed in `GameDir`, the DLL is copied into `BepInEx/plugins` automatically.
