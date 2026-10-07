@@ -1,5 +1,7 @@
-# No longer maintained!
 # PlateUp-MorePlayersMod
+
+UPDATED FOR PERSONAL USE, MIGHT BE BUGS IDK.
+
 Mod that adds more players to PlateUp.
 
 Instructions:
