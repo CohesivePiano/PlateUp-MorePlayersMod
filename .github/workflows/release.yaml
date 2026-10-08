@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  BEPINEX_VERSION: "5.4.23.2"
+  BEPINEX_SHA256: "F752CE4E838F4C305B9DA1404B6745F2CFF23B8BFD494F79F0C84D0A01F59B46"
+  PLUGIN_DLL: MorePlayers/bin/Release/MorePlayers.dll
+
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble release zips
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $v = $env:BEPINEX_VERSION
+          $tag = $env:GITHUB_REF_NAME
+
+          if (-not (Test-Path $env:PLUGIN_DLL)) {
+            throw "$env:PLUGIN_DLL not found. Build the project in Release mode and commit the generated MorePlayers/bin/Release/MorePlayers.dll before tagging."
+          }
+
+          # Download + verify BepInEx
+          $url = "https://github.com/BepInEx/BepInEx/releases/download/v$v/BepInEx_win_x64_$v.zip"
+          Invoke-WebRequest $url -OutFile bepinex.zip
+          $hash = (Get-FileHash bepinex.zip -Algorithm SHA256).Hash
+          Write-Host "BepInEx SHA256: $hash"
+          if ($env:BEPINEX_SHA256 -and $hash -ne $env:BEPINEX_SHA256) {
+            throw "BepInEx checksum mismatch"
+          }
+
+          # Full bundle: BepInEx 5 + plugin + its versioned MIT license
+          New-Item -ItemType Directory stage/full -Force | Out-Null
+          Expand-Archive bepinex.zip -DestinationPath stage/full
+          New-Item -ItemType Directory stage/full/BepInEx/plugins -Force | Out-Null
+          Copy-Item $env:PLUGIN_DLL stage/full/BepInEx/plugins/
+          Invoke-WebRequest "https://raw.githubusercontent.com/BepInEx/BepInEx/v$v/LICENSE" `
+            -OutFile stage/full/BepInEx/LICENSE-BepInEx-MIT.txt
+
+          # Plugin-only bundle
+          New-Item -ItemType Directory stage/plugin/BepInEx/plugins -Force | Out-Null
+          Copy-Item $env:PLUGIN_DLL stage/plugin/BepInEx/plugins/
+
+          New-Item -ItemType Directory dist -Force | Out-Null
+          Compress-Archive -Path stage/full/*   -DestinationPath "dist/MorePlayers-$tag-with-BepInEx.zip"
+          Compress-Archive -Path stage/plugin/* -DestinationPath "dist/MorePlayers-$tag-plugin-only.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-zips
+          path: dist/*.zip
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true

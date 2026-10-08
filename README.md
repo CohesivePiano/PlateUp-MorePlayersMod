@@ -4,10 +4,10 @@ Mod that raises PlateUp's 4-player limit. BepInEx 5 plugin.
 Updated for the current PlateUp build (Unity 2020.3.48, game with the built-in Workshop mod loader).
 
 ## Install (every player)
-1. Download BepInEx 5 (x64, `BepInEx_win_x64_5.4.x.zip`) from https://github.com/BepInEx/BepInEx/releases.
-2. Extract it into the folder that contains `PlateUp.exe`.
-3. Start the game once and close it at the main menu (this creates `BepInEx/plugins` and `BepInEx/config`).
-4. Put `MorePlayers.dll` into `BepInEx/plugins`.
+1. Download the latest release from [Releases](https://github.com/austinmiddle1/PlateUp-MorePlayersMod/releases/latest).
+2. If you already have BepInEx 5 installed, download the plugin-only ZIP. Otherwise, download the ZIP that includes BepInEx.
+3. Extract the ZIP into the folder that contains `PlateUp.exe`.
+4. Start the game once and close it at the main menu; this creates `BepInEx/config`.
 5. Optional: edit `BepInEx/config/MorePlayers.cfg` and set `Max players` (4–8, default 8).
 
 **Everyone should install the mod.** The host's copy is what raises the lobby and player cap; matching versions avoid surprises.
@@ -59,4 +59,9 @@ Free tiles are found from the HQ's floor plan when it loads. A placement is only
 ```
 dotnet build MorePlayers/MorePlayers.csproj -c Release -p:GameDir="<path to folder containing PlateUp.exe>"
 ```
-If BepInEx is installed in `GameDir`, the DLL is copied into `BepInEx/plugins` automatically.
+The build creates `MorePlayers/bin/Release/MorePlayers.dll`. If BepInEx is installed in `GameDir`, the DLL is also copied into `BepInEx/plugins`.
+
+## Publishing a release
+The GitHub Actions workflow packages `MorePlayers/bin/Release/MorePlayers.dll` into downloadable ZIPs when you push a version tag such as `v1.2.0`.
+
+Before tagging a new version, build the project in Release mode, commit the updated `MorePlayers/bin/Release/MorePlayers.dll` along with your changes, then push the tag. The workflow publishes both a plugin-only ZIP and a ZIP that includes BepInEx.
